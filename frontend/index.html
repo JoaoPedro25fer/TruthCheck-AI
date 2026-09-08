@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TruthCheck AI — Verificação de notícias com Inteligência Artificial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EDEEE7;
+    --paper-raised: #F5F6F1;
+    --ink: #16211C;
+    --ink-soft: #48584D;
+    --ink-faint: #7C8A7F;
+    --line: #C9CCC0;
+    --accent: #1F5AA6;
+    --accent-ink: #0E3C74;
+    --stamp-verified: #2F6D4F;
+    --stamp-false: #A6342A;
+    --stamp-uncertain: #B98226;
+    --stamp-unverifiable: #565F6B;
+    --radius-s: 3px;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'IBM Plex Sans', -apple-system, Segoe UI, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a{ color: var(--accent); }
+
+  img, svg{ display:block; max-width:100%; }
+
+  .wrap{
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* ---------- Skip link / focus ---------- */
+  .skip-link{
+    position:absolute; left:-9999px; top:0;
+    background:var(--ink); color:var(--paper); padding:10px 16px;
+    z-index:100;
+  }
+  .skip-link:focus{ left: 12px; top: 12px; }
+
+  :focus-visible{
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Header / Nameplate ---------- */
+  header.site{
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .nameplate{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 20px 0 16px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    text-decoration:none;
+    color:var(--ink);
+  }
+
+  .brand .mark{
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1.55rem;
+    letter-spacing: -0.01em;
+  }
+
+  .brand .mark em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .brand .tagline{
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    border-left: 1px solid var(--line);
+    padding-left: 10px;
+    display:none;
+  }
+
+  nav.primary{
+    display:flex;
+    align-items:center;
+    gap: 28px;
+  }
+
+  nav.primary a{
+    color: var(--ink-soft);
+    text-decoration:none;
+    font-size: 0.92rem;
+  }
+  nav.primary a:hover{ color: var(--ink); }
+
+  .btn{
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    font-weight: 500;
+    border: 1px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    padding: 9px 18px;
+    border-radius: var(--radius-s);
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-block;
+  }
+
+  .btn:hover{ background: var(--ink); color: var(--paper); }
+
+  .btn.primary{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.primary:hover{ background: var(--accent-ink); border-color: var(--accent-ink); }
+
+  .nav-toggle{
+    display:none;
+    background:none;
+    border:1px solid var(--line);
+    border-radius: var(--radius-s);
+    width:40px; height:40px;
+    align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .nav-toggle svg{ width:20px; height:20px; }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding: 64px 0 72px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hero-grid{
+    display:grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 56px;
+    align-items:start;
+  }
+
+  .eyebrow-note{
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    margin: 0 0 14px;
+  }
+
+  h1{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.3rem, 4.4vw, 3.4rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0 0 20px;
+    max-width: 14ch;
+  }
+
+  h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent-ink);
+  }
+
+  .hero-lede{
+    font-size: 1.08rem;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0 0 32px;
+  }
+
+  .analyze-card{
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px;
+  }
+
+  .analyze-card label{
+    display:block;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .analyze-card textarea{
+    width:100%;
+    min-height: 108px;
+    resize: vertical;
+    font-family: var(--sans);
+    font-size: 0.96rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    padding: 12px 14px;
+  }
+
+  .analyze-card textarea:focus{
+    border-color: var(--accent);
+  }
+
+  .analyze-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top: 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .analyze-hint{
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+  }
+
+  .result-box{
+    margin-top: 18px;
+    border-top: 1px dashed var(--line);
+    padding-top: 16px;
+    display:none;
+  }
+
+  .result-box.show{ display:block; }
+
+  .result-box .loading{
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+
+  .stamp-inline{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    transform: rotate(-2deg);
+  }
+
+  .result-copy{
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  .result-disclaimer{
+    font-size: 0.76rem;
+    color: var(--ink-faint);
+    margin-top: 10px;
+  }
+
+  /* ---------- Hero side: mini stamps ---------- */
+  .stamp-stack{
+    display:flex;
+    flex-direction:column;
+    gap: 18px;
+    padding-top: 8px;
+  }
+
+  .mini-stamp{
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 6px;
+    padding: 16px 18px;
+    display:flex;
+    align-items:center;
+    gap: 14px;
+  }
+
+  .mini-stamp .badge{
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  .mini-stamp p{
+    margin:0;
+    font-size: 0.84rem;
+    color: var(--ink-soft);
+  }
+
+  .verified{ color: var(--stamp-verified); }
+  .falso{ color: var(--stamp-false); }
+  .incerto{ color: var(--stamp-uncertain); }
+  .inconclusivo{ color: var(--stamp-unverifiable); }
+
+  /* ---------- Section shared ---------- */
+  section{
+    padding: 64px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .section-head{
+    max-width: 56ch;
+    margin-bottom: 40px;
+  }
+
+  .section-head h2{
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .section-head p{
+    color: var(--ink-soft);
+    margin:0;
+    font-size: 1rem;
+  }
+
+  /* ---------- Como funciona ---------- */
+  .steps{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+
+  .step{
+    padding: 0 28px;
+    border-left: 1px solid var(--line);
+    position: relative;
+  }
+  .step:first-child{ border-left: none; padding-left: 0; }
+
+  .step .num{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.6rem;
+    color: var(--ink-faint);
+    display:block;
+    margin-bottom: 14px;
+  }
+
+  .step h3{
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1.02rem;
+    margin: 0 0 8px;
+  }
+
+  .step p{
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin:0;
+  }
+
+  /* ---------- Categorias / carimbos ---------- */
+  .stamps-grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  .stamp-card{
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    border-radius: 6px;
+    padding: 22px 20px 24px;
+  }
+
+  .stamp-card .stamp-mark{
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    padding: 6px 14px;
+    display:inline-block;
+    margin-bottom: 16px;
+  }
+
+  .stamp-card:nth-child(1) .stamp-mark{ transform: rotate(-3deg); }
+  .stamp-card:nth-child(2) .stamp-mark{ transform: rotate(2deg); }
+  .stamp-card:nth-child(3) .stamp-mark{ transform: rotate(-1.5deg); }
+  .stamp-card:nth-child(4) .stamp-mark{ transform: rotate(2.5deg); }
+
+  .stamp-card p{
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin:0;
+  }
+
+  /* ---------- Missão / pilares ---------- */
+  .pillars{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .pillar h3{
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+
+  .pillar p{
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin:0;
+  }
+
+  /* ---------- Footer ---------- */
+  footer.site{
+    padding: 48px 0 40px;
+  }
+
+  .footer-grid{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap: wrap;
+    gap: 32px;
+  }
+
+  .footer-brand .mark{
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .footer-brand p{
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    margin: 8px 0 0;
+    max-width: 34ch;
+  }
+
+  .footer-col h4{
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+
+  .footer-col ul{
+    list-style:none;
+    padding:0;
+    margin:0;
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+  }
+
+  .footer-col a{
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    text-decoration:none;
+  }
+  .footer-col a:hover{ color: var(--accent); }
+
+  .footer-base{
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 880px){
+    nav.primary{ display:none; }
+    .nav-toggle{ display:flex; }
+    .hero-grid{ grid-template-columns: 1fr; }
+    .steps{ grid-template-columns: 1fr; gap: 28px; }
+    .step{ border-left:none; padding-left:0; padding-top: 20px; border-top: 1px solid var(--line); }
+    .step:first-child{ border-top:none; padding-top:0; }
+    .stamps-grid{ grid-template-columns: 1fr 1fr; }
+    .pillars{ grid-template-columns: 1fr; gap: 24px; }
+  }
+
+  @media (max-width: 560px){
+    .wrap{ padding: 0 20px; }
+    .stamps-grid{ grid-template-columns: 1fr; }
+    .analyze-row{ flex-direction:column; align-items:stretch; }
+    .btn.full-mobile{ width:100%; text-align:center; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Pular para o conteúdo</a>
+
+<header class="site">
+  <div class="wrap nameplate">
+    <a href="#top" class="brand">
+      <span class="mark">Truth<em>Check</em> AI</span>
+      <span class="tagline">verificação de notícias</span>
+    </a>
+
+    <nav class="primary" aria-label="Navegação principal">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#categorias">Categorias</a>
+      <a href="#missao">Sobre o projeto</a>
+      <a href="#" class="btn">Entrar</a>
+    </nav>
+
+    <button class="nav-toggle" aria-label="Abrir menu" aria-expanded="false" id="navToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow-note">Projeto de Trabalho de Conclusão de Curso · 2026.2</p>
+        <h1>Antes de compartilhar, <em>verifique</em>.</h1>
+        <p class="hero-lede">
+          Cole o texto de uma notícia ou o link da publicação. A TruthCheck AI cruza
+          o conteúdo com padrões de linguagem, consistência factual e fontes conhecidas
+          para te dar uma classificação clara — com justificativa, não só um veredito seco.
+        </p>
+
+        <form class="analyze-card" id="analyzeForm">
+          <label for="newsInput">Texto ou link da notícia</label>
+          <textarea id="newsInput" placeholder="Cole aqui o texto da notícia ou a URL da matéria..." required></textarea>
+
+          <div class="analyze-row">
+            <span class="analyze-hint">A análise leva poucos segundos.</span>
+            <button type="submit" class="btn primary full-mobile">Analisar notícia</button>
+          </div>
+
+          <div class="result-box" id="resultBox" aria-live="polite">
+            <!-- preenchido via JS de demonstração -->
+          </div>
+        </form>
+      </div>
+
+      <div class="stamp-stack" aria-hidden="true">
+        <div class="mini-stamp">
+          <span class="badge verified">VERIFICADO</span>
+          <p>Conteúdo consistente com fontes confiáveis e checagem factual.</p>
+        </div>
+        <div class="mini-stamp">
+          <span class="badge falso">FALSO</span>
+          <p>Afirmações contradizem fatos verificáveis ou fontes oficiais.</p>
+        </div>
+        <div class="mini-stamp">
+          <span class="badge incerto">ENGANOSO</span>
+          <p>Mistura fatos reais com interpretações distorcidas ou fora de contexto.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="como-funciona">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Como funciona a análise</h2>
+        <p>Três etapas, do texto colado até a classificação justificada.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="num">1</span>
+          <h3>Você envia o conteúdo</h3>
+          <p>Cole o texto da notícia ou apenas o link. O sistema extrai o conteúdo relevante automaticamente.</p>
+        </div>
+        <div class="step">
+          <span class="num">2</span>
+          <h3>A IA analisa</h3>
+          <p>O modelo avalia linguagem, consistência interna, indícios de sensacionalismo e cruzamento com informações conhecidas.</p>
+        </div>
+        <div class="step">
+          <span class="num">3</span>
+          <h3>Você recebe o resultado</h3>
+          <p>Classificação clara — Verificado, Falso, Enganoso ou Inconclusivo — junto da justificativa que levou a essa conclusão.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="categorias">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Categorias de classificação</h2>
+        <p>Todo resultado cai em uma destas quatro categorias, nunca em um simples "sim ou não".</p>
+      </div>
+
+      <div class="stamps-grid">
+        <div class="stamp-card">
+          <span class="stamp-mark verified">VERIFICADO</span>
+          <p>O conteúdo é consistente com fatos verificáveis e fontes confiáveis.</p>
+        </div>
+        <div class="stamp-card">
+          <span class="stamp-mark falso">FALSO</span>
+          <p>As afirmações centrais contradizem evidências ou fontes oficiais conhecidas.</p>
+        </div>
+        <div class="stamp-card">
+          <span class="stamp-mark incerto">ENGANOSO</span>
+          <p>Combina fatos reais com distorções, exageros ou informações fora de contexto.</p>
+        </div>
+        <div class="stamp-card">
+          <span class="stamp-mark inconclusivo">INCONCLUSIVO</span>
+          <p>Não há evidência suficiente, a favor ou contra, para uma classificação segura.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="missao">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Por que este projeto existe</h2>
+        <p>A desinformação cresce mais rápido do que a capacidade de checá-la manualmente. A TruthCheck AI existe para reduzir essa distância.</p>
+      </div>
+
+      <div class="pillars">
+        <div class="pillar">
+          <h3>Combate à desinformação</h3>
+          <p>Ajuda a identificar conteúdos potencialmente falsos antes de serem compartilhados.</p>
+        </div>
+        <div class="pillar">
+          <h3>Educação digital</h3>
+          <p>Incentiva o pensamento crítico e o consumo consciente de informação na internet.</p>
+        </div>
+        <div class="pillar">
+          <h3>Apoio à sociedade</h3>
+          <p>Uma ferramenta acessível para estudantes, jornalistas, pesquisadores e o público em geral.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="mark">Truth<em style="color:var(--accent-ink); font-style:italic;">Check</em> AI</span>
+        <p>Plataforma de verificação de notícias com Inteligência Artificial, desenvolvida como Trabalho de Conclusão de Curso.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Produto</h4>
+        <ul>
+          <li><a href="#como-funciona">Como funciona</a></li>
+          <li><a href="#categorias">Categorias</a></li>
+          <li><a href="#">Histórico de consultas</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Equipe</h4>
+        <ul>
+          <li>João Pedro Fernandes</li>
+          <li>Luiz Tonny Moura Santos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-base">
+      <span>© 2026 TruthCheck AI — Trabalho de Conclusão de Curso.</span>
+      <span>Feito com Node.js, React, Groq e Supabase.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Menu mobile
+  const navToggle = document.getElementById('navToggle');
+  const nav = document.querySelector('nav.primary');
+  navToggle.addEventListener('click', () => {
+    const isOpen = nav.style.display === 'flex';
+    nav.style.display = isOpen ? 'none' : 'flex';
+    nav.style.flexDirection = 'column';
+    nav.style.position = 'absolute';
+    nav.style.top = '72px';
+    nav.style.right = '20px';
+    nav.style.background = 'var(--paper-raised)';
+    nav.style.border = '1px solid var(--line)';
+    nav.style.borderRadius = '6px';
+    nav.style.padding = '16px';
+    nav.style.gap = '14px';
+    navToggle.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  /*
+    Demonstração visual apenas. Nesta etapa o formulário ainda NÃO está
+    conectado ao backend/Groq — isso entra quando integrarmos com a API
+    real (Parte 5 do guia). Por enquanto, simula um resultado para você
+    visualizar o layout do card de resposta.
+  */
+  const form = document.getElementById('analyzeForm');
+  const resultBox = document.getElementById('resultBox');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('newsInput').value.trim();
+    if (!input) return;
+
+    resultBox.className = 'result-box show';
+    resultBox.innerHTML = '<p class="loading">Analisando conteúdo...</p>';
+
+    setTimeout(() => {
+      resultBox.innerHTML = `
+        <span class="stamp-inline incerto">ENGANOSO</span>
+        <p class="result-copy">
+          O texto mistura uma informação verídica com uma conclusão que os dados
+          apresentados não sustentam. A fonte citada existe, mas não afirma o que
+          o conteúdo sugere.
+        </p>
+        <p class="result-disclaimer">
+          Exemplo ilustrativo — a análise real via Groq será conectada na próxima etapa.
+        </p>
+      `;
+    }, 1100);
+  });
+</script>
+
+</body>
+</html>
