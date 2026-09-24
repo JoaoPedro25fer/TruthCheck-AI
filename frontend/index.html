@@ -728,37 +728,76 @@
     navToggle.setAttribute('aria-expanded', String(!isOpen));
   });
 
-  /*
-    Demonstração visual apenas. Nesta etapa o formulário ainda NÃO está
-    conectado ao backend/Groq — isso entra quando integrarmos com a API
-    real (Parte 5 do guia). Por enquanto, simula um resultado para você
-    visualizar o layout do card de resposta.
-  */
+  // Análise de notícias conectada ao backend
   const form = document.getElementById('analyzeForm');
   const resultBox = document.getElementById('resultBox');
+  const botao = form.querySelector('button[type="submit"]');
 
-  form.addEventListener('submit', (e) => {
+  const API_URL = 'http://localhost:3000/analisar-noticia';
+
+  const carimbos = {
+    'Verificado':   { classe: 'verified',     texto: 'VERIFICADO' },
+    'Falso':        { classe: 'falso',        texto: 'FALSO' },
+    'Enganoso':     { classe: 'incerto',      texto: 'ENGANOSO' },
+    'Inconclusivo': { classe: 'inconclusivo', texto: 'INCONCLUSIVO' }
+  };
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const input = document.getElementById('newsInput').value.trim();
-    if (!input) return;
+    const texto = document.getElementById('newsInput').value.trim();
+    if (!texto) return;
 
     resultBox.className = 'result-box show';
     resultBox.innerHTML = '<p class="loading">Analisando conteúdo...</p>';
+    botao.disabled = true;
 
-    setTimeout(() => {
-      resultBox.innerHTML = `
-        <span class="stamp-inline incerto">ENGANOSO</span>
-        <p class="result-copy">
-          O texto mistura uma informação verídica com uma conclusão que os dados
-          apresentados não sustentam. A fonte citada existe, mas não afirma o que
-          o conteúdo sugere.
-        </p>
-        <p class="result-disclaimer">
-          Exemplo ilustrativo — a análise real via Groq será conectada na próxima etapa.
-        </p>
-      `;
-    }, 1100);
+    try {
+      const resposta = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: texto })
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        throw new Error(dados.erro || 'Erro desconhecido.');
+      }
+
+      mostrarResultado(dados);
+    } catch (erro) {
+      const mensagem = erro instanceof TypeError
+        ? 'Não consegui falar com o servidor. Ele está ligado?'
+        : erro.message;
+
+      resultBox.innerHTML = '';
+      const p = document.createElement('p');
+      p.className = 'result-copy';
+      p.textContent = 'Não foi possível analisar: ' + mensagem;
+      resultBox.appendChild(p);
+    } finally {
+      botao.disabled = false;
+    }
   });
+
+  function mostrarResultado(dados) {
+    const carimbo = carimbos[dados.classificacao] || carimbos['Inconclusivo'];
+    resultBox.innerHTML = '';
+
+    const selo = document.createElement('span');
+    selo.className = 'stamp-inline ' + carimbo.classe;
+    selo.textContent = carimbo.texto;
+
+    const justificativa = document.createElement('p');
+    justificativa.className = 'result-copy';
+    justificativa.textContent = dados.justificativa;
+
+    const aviso = document.createElement('p');
+    aviso.className = 'result-disclaimer';
+    aviso.textContent = `Confiança da IA: ${dados.confianca}%. Resultado gerado por inteligência artificial, confira sempre em fontes oficiais.`;
+
+    resultBox.append(selo, justificativa, aviso);
+  }
 </script>
 
 </body>
