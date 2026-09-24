@@ -748,7 +748,7 @@
     if (!texto) return;
 
     resultBox.className = 'result-box show';
-    resultBox.innerHTML = '<p class="loading">Analisando conteúdo...</p>';
+    resultBox.innerHTML = '<p class="loading">Pesquisando na web e analisando... pode levar até 30 segundos.</p>';
     botao.disabled = true;
 
     try {
@@ -780,7 +780,7 @@
     }
   });
 
-  function mostrarResultado(dados) {
+      function mostrarResultado(dados) {
     const carimbo = carimbos[dados.classificacao] || carimbos['Inconclusivo'];
     resultBox.innerHTML = '';
 
@@ -792,11 +792,43 @@
     justificativa.className = 'result-copy';
     justificativa.textContent = dados.justificativa;
 
+    resultBox.append(selo, justificativa);
+
+    const fontesValidas = (dados.fontes || []).filter(url => /^https?:\/\//.test(url));
+
+    if (fontesValidas.length > 0) {
+      const titulo = document.createElement('p');
+      titulo.className = 'result-disclaimer';
+      titulo.textContent = 'Fontes consultadas:';
+
+      const lista = document.createElement('ul');
+      lista.className = 'result-disclaimer';
+
+      fontesValidas.forEach(url => {
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = url.replace(/^https?:\/\//, '').split('/')[0];
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        item.appendChild(link);
+        lista.appendChild(item);
+      });
+
+      resultBox.append(titulo, lista);
+    }
+
+    if (dados.modo === 'sem-pesquisa') {
+      const alerta = document.createElement('p');
+      alerta.className = 'result-disclaimer';
+      alerta.textContent = 'Atenção: esta análise foi feita sem pesquisa na web. Notícias recentes podem não ser reconhecidas.';
+      resultBox.append(alerta);
+    }
+
     const aviso = document.createElement('p');
     aviso.className = 'result-disclaimer';
-    aviso.textContent = `Confiança da IA: ${dados.confianca}%. Resultado gerado por inteligência artificial, confira sempre em fontes oficiais.`;
-
-    resultBox.append(selo, justificativa, aviso);
+    aviso.textContent = `Confiança da IA: ${dados.confianca}%. Resultado gerado por inteligência artificial, confira sempre as fontes.`;
+    resultBox.append(aviso);
   }
 </script>
 
