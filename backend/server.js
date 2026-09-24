@@ -131,8 +131,12 @@ app.post('/analisar-noticia', async (req, res) => {
     console.error('Plano B também falhou:', erro.message);
     return res.status(500).json({ erro: 'Falha ao analisar a notícia.' });
   }
-});
+}); 
 
-app.listen(PORT, () => {
+app.listen(PORT, (erro) => {
+  if (erro) {
+    console.error('Não foi possível ligar o servidor:', erro.message);
+    return;
+  }
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
