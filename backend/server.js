@@ -29,7 +29,7 @@ app.post('/analisar-noticia', async (req, res) => {
 
   try {
     const resposta = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
+            model: 'openai/gpt-oss-120b',
       temperature: 0.2,
       response_format: { type: 'json_object' },
       messages: [
