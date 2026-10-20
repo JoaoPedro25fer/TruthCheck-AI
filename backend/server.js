@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const Groq = require('groq-sdk');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
@@ -10,6 +11,7 @@ const MODELO_PESQUISA = 'openai/gpt-oss-120b';
 const MODELO_RAPIDO = 'openai/gpt-oss-20b';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -18,12 +20,24 @@ const REGRAS = `Classifique em UMA destas categorias:
 - "Verificado": a informação é confirmada por evidências confiáveis.
 - "Falso": a informação é CONTRADITA por evidências concretas.
 - "Enganoso": mistura fatos reais com distorções, exageros ou falta de contexto.
-- "Inconclusivo": não há evidência suficiente para confirmar nem para desmentir.
+- "Inconclusivo": não há evidência suficiente para confirmar nem para desmentir, OU a afirmação é ambígua demais para ser checada.Inconclusivo": não há evidência suficiente para confirmar nem para desmentir.
 
 REGRA MAIS IMPORTANTE: não conhecer um fato NÃO é motivo para dizer que ele é falso.
 Só use "Falso" quando existir evidência que contradiga a afirmação.
 Se você não tem informação sobre o fato, use "Inconclusivo".
-Nunca invente leis, regras ou competências de órgãos para justificar uma classificação.`;
+Nunca invente leis, regras ou competências de órgãos para justificar uma classificação.
+
+DATAS:
+- Use a data de hoje como referência para tudo.
+- Sempre compare a data de cada fonte com a data de hoje. Uma fonte antiga pode falar de algo como "futuro" quando isso já aconteceu.
+- Se uma fonte diz que um evento ainda vai acontecer, mas essa data já passou, procure o resultado do evento antes de classificar.
+AFIRMAÇÕES AMBÍGUAS:
+- Se a afirmação pode se referir a eventos diferentes (por exemplo, anos diferentes) e o resultado muda conforme o evento, NÃO escolha um deles.
+- Nesse caso, classifique como "Inconclusivo" e explique na justificativa as interpretações possíveis e o resultado de cada uma, pedindo que o usuário especifique (por exemplo, o ano).
+
+CONFIANÇA:
+- Use confiança acima de 90 apenas quando houver fontes recentes e concordantes.
+- Se as fontes forem antigas, poucas ou contraditórias, reduza a confiança.`;
 
 function dataDeHoje() {
   return new Date().toLocaleDateString('pt-BR');
@@ -107,6 +121,26 @@ async function analisarSemPesquisa(texto) {
   resultado.fontes = [];
   return resultado;
 }
+async function salvarAnalise(texto, resultado) {
+  try {
+    const { error } = await supabase
+      .from('analises')
+      .insert({
+        noticia: texto,
+        classificacao: resultado.classificacao,
+        justificativa: resultado.justificativa
+      });
+
+    if (error) {
+      console.error('Erro ao salvar no Supabase:', error.message);
+      return;
+    }
+
+    console.log('Análise salva no Supabase.');
+  } catch (erro) {
+    console.error('Falha inesperada ao salvar:', erro.message);
+  }
+}
 
 app.post('/analisar-noticia', async (req, res) => {
   const { texto } = req.body;
@@ -118,6 +152,7 @@ app.post('/analisar-noticia', async (req, res) => {
   try {
     const resultado = await analisarComPesquisa(texto);
     console.log('Resultado (com pesquisa):', resultado);
+    await salvarAnalise(texto, resultado); // ← NOVO
     return res.json(resultado);
   } catch (erroPesquisa) {
     console.warn('Pesquisa falhou, usando plano B:', erroPesquisa.message);
@@ -126,12 +161,13 @@ app.post('/analisar-noticia', async (req, res) => {
   try {
     const resultado = await analisarSemPesquisa(texto);
     console.log('Resultado (plano B):', resultado);
+    await salvarAnalise(texto, resultado); // ← NOVO
     return res.json(resultado);
   } catch (erro) {
     console.error('Plano B também falhou:', erro.message);
     return res.status(500).json({ erro: 'Falha ao analisar a notícia.' });
   }
-}); 
+});
 
 app.listen(PORT, (erro) => {
   if (erro) {
