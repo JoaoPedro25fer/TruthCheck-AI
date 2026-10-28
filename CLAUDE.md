@@ -15,12 +15,11 @@
 - Ambiente: Windows, PowerShell, VS Code em português, pasta dentro do OneDrive.
 
 ## Estado atual
-- Parte 3 (Supabase) em andamento. Supabase ativo em 28/10/2026.
-- `salvarAnalise` no `server.js` foi atualizada para gravar confianca, modo e fontes. Ainda NÃO foi confirmado se essas colunas estão sendo gravadas, nem foi feito commit.
+- Gravação no Supabase concluída e confirmada em 28/10/2026: `salvarAnalise` grava confianca, modo e fontes (linhas id 1–9 antigas ficam NULL nessas colunas). Commit `3971278`.
+- Regra do "Inconclusivo" na constante `REGRAS` corrigida.
+- Tag `v0.1-prototipo-html` (protótipo com frontend em HTML) criada e enviada ao GitHub junto com a `main`.
 - `backend/testar-supabase.js` verifica se o Supabase está ativo (o plano gratuito pausa após ~1 semana sem uso; reativar só pelo site).
-- Pendente: corrigir um trecho duplicado na constante `REGRAS`, na linha do "Inconclusivo".
-- Próximo: criar uma rota para ler o histórico de análises.
-- Depois do banco: app em React Native com Expo.
+- Próximo (03/11 a 08/11): login com Supabase Auth, coluna `user_id` em `analises` e rota de histórico por usuário (nessa ordem).
 
 ## Regras do projeto
 - Responda sempre em português do Brasil.
