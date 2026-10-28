@@ -20,7 +20,7 @@ const REGRAS = `Classifique em UMA destas categorias:
 - "Verificado": a informação é confirmada por evidências confiáveis.
 - "Falso": a informação é CONTRADITA por evidências concretas.
 - "Enganoso": mistura fatos reais com distorções, exageros ou falta de contexto.
-- "Inconclusivo": não há evidência suficiente para confirmar nem para desmentir, OU a afirmação é ambígua demais para ser checada.Inconclusivo": não há evidência suficiente para confirmar nem para desmentir.
+- "Inconclusivo": não há evidência suficiente para confirmar nem para desmentir, OU a afirmação é ambígua demais para ser checada.
 
 REGRA MAIS IMPORTANTE: não conhecer um fato NÃO é motivo para dizer que ele é falso.
 Só use "Falso" quando existir evidência que contradiga a afirmação.
@@ -121,6 +121,12 @@ async function analisarSemPesquisa(texto) {
   resultado.fontes = [];
   return resultado;
 }
+function numeroInteiroOuNulo(valor) {
+  const numero = Number(valor);
+  if (Number.isNaN(numero)) return null;
+  return Math.round(numero);
+}
+
 async function salvarAnalise(texto, resultado) {
   try {
     const { error } = await supabase
@@ -128,7 +134,10 @@ async function salvarAnalise(texto, resultado) {
       .insert({
         noticia: texto,
         classificacao: resultado.classificacao,
-        justificativa: resultado.justificativa
+        justificativa: resultado.justificativa,
+        confianca: numeroInteiroOuNulo(resultado.confianca),
+        modo: resultado.modo,
+        fontes: Array.isArray(resultado.fontes) ? resultado.fontes : []
       });
 
     if (error) {
