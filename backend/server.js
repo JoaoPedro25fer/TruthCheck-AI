@@ -5,7 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const MODELO_PESQUISA = 'openai/gpt-oss-120b';
 const MODELO_RAPIDO = 'openai/gpt-oss-20b';
@@ -127,7 +127,18 @@ function numeroInteiroOuNulo(valor) {
   return Math.round(numero);
 }
 
-async function salvarAnalise(texto, resultado) {
+async function identificarUsuario(req) {
+  const cabecalho = req.headers.authorization || '';
+  if (!cabecalho.startsWith('Bearer ')) return null;
+
+  const token = cabecalho.slice(7);
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) return null;
+
+  return data.user.id;
+}
+
+async function salvarAnalise(texto, resultado, userId) {
   try {
     const { error } = await supabase
       .from('analises')
@@ -137,7 +148,8 @@ async function salvarAnalise(texto, resultado) {
         justificativa: resultado.justificativa,
         confianca: numeroInteiroOuNulo(resultado.confianca),
         modo: resultado.modo,
-        fontes: Array.isArray(resultado.fontes) ? resultado.fontes : []
+        fontes: Array.isArray(resultado.fontes) ? resultado.fontes : [],
+        user_id: userId
       });
 
     if (error) {
@@ -158,10 +170,12 @@ app.post('/analisar-noticia', async (req, res) => {
     return res.status(400).json({ erro: 'Envie o texto da notícia.' });
   }
 
+  const userId = await identificarUsuario(req);
+
   try {
     const resultado = await analisarComPesquisa(texto);
     console.log('Resultado (com pesquisa):', resultado);
-    await salvarAnalise(texto, resultado); // ← NOVO
+    await salvarAnalise(texto, resultado, userId);
     return res.json(resultado);
   } catch (erroPesquisa) {
     console.warn('Pesquisa falhou, usando plano B:', erroPesquisa.message);
@@ -170,12 +184,32 @@ app.post('/analisar-noticia', async (req, res) => {
   try {
     const resultado = await analisarSemPesquisa(texto);
     console.log('Resultado (plano B):', resultado);
-    await salvarAnalise(texto, resultado); // ← NOVO
+    await salvarAnalise(texto, resultado, userId);
     return res.json(resultado);
   } catch (erro) {
     console.error('Plano B também falhou:', erro.message);
     return res.status(500).json({ erro: 'Falha ao analisar a notícia.' });
   }
+});
+
+app.get('/historico', async (req, res) => {
+  const userId = await identificarUsuario(req);
+  if (!userId) {
+    return res.status(401).json({ erro: 'Faça login para ver o histórico.' });
+  }
+
+  const { data, error } = await supabase
+    .from('analises')
+    .select('id, created_at, noticia, classificacao, justificativa, confianca, modo, fontes')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Erro ao buscar histórico:', error.message);
+    return res.status(500).json({ erro: 'Falha ao buscar o histórico.' });
+  }
+
+  return res.json(data);
 });
 
 app.listen(PORT, (erro) => {
