@@ -22,7 +22,8 @@
 - Autenticação concluída e testada em 11/11/2026: coluna `user_id` (uuid, FK para `auth.users`, `on delete set null`), função `identificarUsuario` (JWT via `supabase.auth.getUser`), rota `GET /historico` (401 sem login, filtra por `user_id`). `/analisar-noticia` aceita usuário anônimo (login opcional por enquanto). Confirmação de e-mail do Supabase Auth desligada. `PORT` configurável por variável de ambiente.
 - Web em React (Vite) criado em `web/`: login/cadastro, análise e histórico, com o visual do `frontend/index.html`. Roda com `npm run dev` (porta 5173). Variáveis em `web/.env`: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY (chave pública, nunca a secreta), VITE_API_URL.
 - Pasta local `estudo/` (ignorada pelo Git) com material de estudo para a apresentação: perguntas da banca e fluxo do sistema. Atualizar a cada etapa.
-- Próximo: dashboard administrativo (RF06, métricas por selo e por dia), depois app React Native (Expo) em `mobile/`.
+- Dashboard administrativo (RF06) concluído e testado em 16/11/2026: admins definidos pela variável `ADMIN_EMAILS` em `backend/.env` (e-mails separados por vírgula); rotas `GET /eu` (diz se o usuário é admin) e `GET /admin/metricas` (401 sem login, 403 se não for admin; total, por selo, por modo, confiança média e últimos 14 dias); aba "Painel" em `web/src/components/Painel.jsx`, visível só para admin. Gráficos feitos só com CSS, sem biblioteca nova. Ainda sem commit.
+- Próximo: app React Native (Expo) em `mobile/`.
 
 ## Regras do projeto
 - Responda sempre em português do Brasil.
@@ -33,7 +34,7 @@
 - Não apague arquivos sem pedir.
 ## Plano até 25/11 (conforme o pré-TCC)
 - Requisitos do pré-TCC: RF01 cadastro e autenticação (Supabase Auth + JWT), RF02 envio de texto ou URL, RF03 classificação por IA, RF04 justificativa, RF05 histórico por usuário, RF06 dashboard administrativo, RF07 web (React.js) e mobile (React Native).
-- Prontos: RF01, RF03, RF04, RF05 e RF07 web (login, análise e histórico em React). Parciais: RF02 (URL a testar). Pendentes: RF06 (dashboard admin) e RF07 mobile.
+- Prontos: RF01, RF03, RF04, RF05, RF06 e RF07 web (login, análise, histórico e painel admin em React). Parciais: RF02 (URL a testar). Pendente: RF07 mobile.
 - Até 02/11: confirmar gravação de confianca/modo/fontes, corrigir REGRAS, commit.
 - 03/11 a 08/11: login com Supabase Auth, coluna user_id em analises, rota de histórico por usuário. NÃO criar a rota de histórico antes do login.
 - 09/11 a 14/11: web em React.js com Vite, na pasta `web`. Reaproveitar o visual do `frontend/index.html` (estilo jornal, 4 selos). Telas: login, análise, histórico e dashboard admin (RF06, métricas por selo e por dia).

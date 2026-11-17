@@ -335,6 +335,126 @@ h2{
   color: var(--ink-faint);
 }
 
+/* ---------- Painel administrativo ---------- */
+.kpis{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 20px 0 8px;
+}
+
+.kpi{
+  flex: 1;
+  min-width: 160px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  border-radius: 6px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpi-valor{
+  font-family: var(--serif);
+  font-size: 2rem;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.kpi-rotulo{
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.painel-titulo{
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  margin: 36px 0 14px;
+}
+
+.barras{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.barra-linha{
+  display: grid;
+  grid-template-columns: 130px 1fr 90px;
+  align-items: center;
+  gap: 14px;
+}
+
+.barra-trilho{
+  height: 10px;
+  background: var(--line);
+  border-radius: 0 5px 5px 0;
+  overflow: hidden;
+}
+
+.barra-preenchimento{
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+}
+
+.selo-verificado{ background: var(--stamp-verified); }
+.selo-falso{ background: var(--stamp-false); }
+.selo-enganoso{ background: var(--stamp-uncertain); }
+.selo-inconclusivo{ background: var(--stamp-unverifiable); }
+
+.barra-valor{
+  font-size: 0.9rem;
+  color: var(--ink);
+  text-align: right;
+}
+
+.barra-valor small{ color: var(--ink-faint); }
+
+.colunas{
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  height: 200px;
+  border-bottom: 1px solid var(--line);
+}
+
+.coluna{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  padding-bottom: 22px;
+}
+
+.coluna-barra{
+  width: 60%;
+  max-width: 22px;
+  min-height: 2px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.coluna-valor{
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+.coluna-dia{
+  position: absolute;
+  bottom: 4px;
+  font-size: 0.66rem;
+  color: var(--ink-faint);
+}
+
 /* ---------- Rodapé ---------- */
 footer.site{
   border-top: 1px solid var(--line);
@@ -347,4 +467,7 @@ footer.site{
   .wrap{ padding: 0 20px; }
   .nameplate{ padding: 16px 20px 12px; }
   .analyze-row{ flex-direction: column; align-items: stretch; }
+  .barra-linha{ grid-template-columns: 1fr 70px; }
+  .barra-trilho{ grid-column: 1 / -1; grid-row: 2; }
+  .coluna-dia{ font-size: 0.55rem; }
 }

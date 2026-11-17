@@ -15,6 +15,14 @@ export function analisarNoticia(texto, token) {
   return chamar('/analisar-noticia', { method: 'POST', body: JSON.stringify({ texto }) }, token);
 }
 
+export function buscarPerfil(token) {
+  return chamar('/eu', { method: 'GET' }, token);
+}
+
+export function buscarMetricas(token) {
+  return chamar('/admin/metricas', { method: 'GET' }, token);
+}
+
 export function buscarHistorico(token) {
   return chamar('/historico', { method: 'GET' }, token);
 }

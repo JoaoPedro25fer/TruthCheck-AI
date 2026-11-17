@@ -127,7 +127,7 @@ function numeroInteiroOuNulo(valor) {
   return Math.round(numero);
 }
 
-async function identificarUsuario(req) {
+async function buscarUsuario(req) {
   const cabecalho = req.headers.authorization || '';
   if (!cabecalho.startsWith('Bearer ')) return null;
 
@@ -135,7 +135,21 @@ async function identificarUsuario(req) {
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return null;
 
-  return data.user.id;
+  return data.user;
+}
+
+async function identificarUsuario(req) {
+  const usuario = await buscarUsuario(req);
+  return usuario ? usuario.id : null;
+}
+
+// Admins = e-mails listados em ADMIN_EMAILS (backend/.env), separados por vírgula.
+function ehAdmin(usuario) {
+  const admins = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  return Boolean(usuario && usuario.email && admins.includes(usuario.email.toLowerCase()));
 }
 
 async function salvarAnalise(texto, resultado, userId) {
@@ -210,6 +224,87 @@ app.get('/historico', async (req, res) => {
   }
 
   return res.json(data);
+});
+
+app.get('/eu', async (req, res) => {
+  const usuario = await buscarUsuario(req);
+  if (!usuario) return res.status(401).json({ erro: 'Faça login.' });
+
+  return res.json({ admin: ehAdmin(usuario) });
+});
+
+const SELOS = ['Verificado', 'Falso', 'Enganoso', 'Inconclusivo'];
+const DIAS_NO_GRAFICO = 14;
+
+// O Supabase devolve no máximo 1000 linhas por pedido; buscamos em páginas até acabar.
+async function buscarTodasAnalises() {
+  const TAMANHO = 1000;
+  const todas = [];
+
+  for (let inicio = 0; ; inicio += TAMANHO) {
+    const { data, error } = await supabase
+      .from('analises')
+      .select('created_at, classificacao, confianca, modo')
+      .order('id', { ascending: true })
+      .range(inicio, inicio + TAMANHO - 1);
+
+    if (error) throw new Error(error.message);
+    todas.push(...data);
+    if (data.length < TAMANHO) return todas;
+  }
+}
+
+// Data (AAAA-MM-DD) no horário de Brasília, para o "dia" não virar às 21h.
+function diaEmBrasilia(data) {
+  return new Date(data).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+}
+
+function calcularMetricas(analises) {
+  const porSelo = Object.fromEntries(SELOS.map((selo) => [selo, 0]));
+  const porModo = { 'com-pesquisa': 0, 'sem-pesquisa': 0 };
+  const contagemPorDia = {};
+  let somaConfianca = 0;
+  let comConfianca = 0;
+
+  for (const a of analises) {
+    if (a.classificacao in porSelo) porSelo[a.classificacao]++;
+    if (a.modo in porModo) porModo[a.modo]++;
+    if (a.confianca !== null) {
+      somaConfianca += a.confianca;
+      comConfianca++;
+    }
+    const dia = diaEmBrasilia(a.created_at);
+    contagemPorDia[dia] = (contagemPorDia[dia] || 0) + 1;
+  }
+
+  // Últimos N dias, incluindo os dias sem nenhuma análise (valor 0).
+  const porDia = [];
+  for (let i = DIAS_NO_GRAFICO - 1; i >= 0; i--) {
+    const dia = diaEmBrasilia(Date.now() - i * 24 * 60 * 60 * 1000);
+    porDia.push({ dia, total: contagemPorDia[dia] || 0 });
+  }
+
+  return {
+    total: analises.length,
+    porSelo,
+    porModo,
+    porDia,
+    confiancaMedia: comConfianca > 0 ? Math.round(somaConfianca / comConfianca) : null
+  };
+}
+
+app.get('/admin/metricas', async (req, res) => {
+  const usuario = await buscarUsuario(req);
+  if (!usuario) return res.status(401).json({ erro: 'Faça login.' });
+  if (!ehAdmin(usuario)) return res.status(403).json({ erro: 'Acesso restrito a administradores.' });
+
+  try {
+    const analises = await buscarTodasAnalises();
+    return res.json(calcularMetricas(analises));
+  } catch (erro) {
+    console.error('Erro ao calcular métricas:', erro.message);
+    return res.status(500).json({ erro: 'Falha ao calcular as métricas.' });
+  }
 });
 
 app.listen(PORT, (erro) => {

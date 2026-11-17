@@ -3,11 +3,27 @@ import { supabase } from './supabase';
 import Analise from './components/Analise';
 import Historico from './components/Historico';
 import Login from './components/Login';
+import Painel from './components/Painel';
+import { buscarPerfil } from './api';
 
 export default function App() {
   const [sessao, setSessao] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [aba, setAba] = useState('analisar');
+  const [admin, setAdmin] = useState(false);
+
+  const token = sessao ? sessao.access_token : null;
+
+  // Pergunta ao servidor se quem entrou é administrador (decide se mostra a aba Painel).
+  useEffect(() => {
+    if (!token) {
+      setAdmin(false);
+      return;
+    }
+    buscarPerfil(token)
+      .then((perfil) => setAdmin(perfil.admin))
+      .catch(() => setAdmin(false));
+  }, [token]);
 
   useEffect(() => {
     if (!supabase) {
@@ -36,8 +52,6 @@ export default function App() {
   }
   if (carregando) return null;
 
-  const token = sessao ? sessao.access_token : null;
-
   async function sair() {
     await supabase.auth.signOut();
     setAba('analisar');
@@ -57,6 +71,11 @@ export default function App() {
             <button className={aba === 'historico' ? 'ativo' : ''} onClick={() => setAba('historico')}>
               Histórico
             </button>
+            {admin && (
+              <button className={aba === 'painel' ? 'ativo' : ''} onClick={() => setAba('painel')}>
+                Painel
+              </button>
+            )}
             {sessao ? (
               <>
                 <span className="usuario">{sessao.user.email}</span>
@@ -73,6 +92,7 @@ export default function App() {
         {aba === 'analisar' && <Analise token={token} />}
         {aba === 'historico' &&
           (sessao ? <Historico token={token} /> : <Login aviso="Entre para ver o seu histórico." />)}
+        {aba === 'painel' && admin && <Painel token={token} />}
         {aba === 'login' && <Login aoEntrar={() => setAba('analisar')} />}
       </main>
 
