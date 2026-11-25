@@ -4,6 +4,7 @@ Plataforma web e mobile de verificação de notícias com inteligência artifici
 
 O usuário cola o texto ou o link de uma notícia e recebe, em segundos, uma classificação com selo, justificativa, nível de confiança e as fontes consultadas.
 
+[![Testes](https://github.com/JoaoPedro25fer/TruthCheck-AI/actions/workflows/testes.yml/badge.svg)](https://github.com/JoaoPedro25fer/TruthCheck-AI/actions/workflows/testes.yml)
 ![Status](https://img.shields.io/badge/status-TCC%20conclu%C3%ADdo-brightgreen)
 ![Node.js](https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white)
@@ -103,6 +104,12 @@ ADMIN_EMAILS=          # e-mails de administrador, separados por vírgula
 node server.js
 ```
 
+Para rodar os testes automáticos do back-end (não precisam do `.env` nem de internet):
+
+```bash
+npm test
+```
+
 ### 2. Site (porta 5173)
 
 ```bash
@@ -157,6 +164,16 @@ Leia o QR code com o app Expo Go.
 | `/admin/metricas` | GET | Administrador | Métricas do painel (401 sem login, 403 sem permissão) |
 
 O token vai no cabeçalho `Authorization: Bearer <token>`.
+
+## Testes automatizados
+
+Os testes ficam em `backend/server.test.js` e usam o testador nativo do Node (`node:test`), sem dependências extras. A Groq e o Supabase são simulados (mock), então os testes não gastam tokens nem gravam no banco. Eles cobrem:
+
+- extração do JSON da resposta da IA (último bloco `<<<JSON ... JSON>>>` e erro de formato);
+- `POST /analisar-noticia`: texto vazio (400), caminho principal com pesquisa, plano B quando a pesquisa falha e erro 500 quando os dois modelos falham;
+- `GET /historico` sem login (401).
+
+O GitHub Actions (`.github/workflows/testes.yml`) roda os testes a cada push e pull request. O selo **Testes** no topo mostra o resultado da última execução.
 
 ## Resultados
 

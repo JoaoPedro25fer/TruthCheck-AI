@@ -307,10 +307,16 @@ app.get('/admin/metricas', async (req, res) => {
   }
 });
 
-app.listen(PORT, (erro) => {
-  if (erro) {
-    console.error('Não foi possível ligar o servidor:', erro.message);
-    return;
-  }
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+// Só liga o servidor quando rodamos "node server.js".
+// Nos testes, o arquivo é importado com require() e o servidor não sobe sozinho.
+if (require.main === module) {
+  app.listen(PORT, (erro) => {
+    if (erro) {
+      console.error('Não foi possível ligar o servidor:', erro.message);
+      return;
+    }
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { app, groq, supabase, extrairResultado, calcularMetricas, ehAdmin };
